@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# URL for Pikachu data
+URL="https://pokeapi.co/api/v2/pokemon/pikachu"
+
+# Output files
+DATA_FILE="data.json"
+ERROR_FILE="errors.txt"
+
+# Make API request
+curl -s -w "%{http_code}" -o "$DATA_FILE" "$URL" | grep -q "200"
+
+# Check if request was successful
+if [ $? -ne 0 ]; then
+    echo "$(date) - Failed to fetch data from $URL" >> "$ERROR_FILE"
+    rm -f "$DATA_FILE"  # Remove incomplete file
+fi
