@@ -1,41 +1,38 @@
 #!/bin/bash
 
-# List of Pokémon
+SCRIPT="fetch_pokemon_parallel.sh"  # script to check
 POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# API base URL
-BASE_URL="https://pokeapi.co/api/v2/pokemon"
+echo "=== Checking for Parallel Fetch Script ==="
 
-# Output directory
-OUTPUT_DIR="pokemon_data"
-ERROR_FILE="errors.txt"
-
-# Create directories/files if they don't exist
-mkdir -p "$OUTPUT_DIR"
-> "$ERROR_FILE"
-
-# Function to fetch Pokémon data
-fetch_pokemon() {
-    local pokemon=$1
-    local url="$BASE_URL/$pokemon"
-
-    echo "Fetching data for $pokemon..."
-    RESPONSE=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$pokemon.json" "$url")
-
-    if [ "$RESPONSE" -eq 200 ]; then
-        echo "Saved data to $OUTPUT_DIR/$pokemon.json ✅"
-    else
-        echo "$(date) - Failed to fetch data for $pokemon (HTTP $RESPONSE)" >> "$ERROR_FILE"
-        rm -f "$OUTPUT_DIR/$pokemon.json"
+# 1️⃣ Check if script contains list of Pokémon
+for p in "${POKEMON_LIST[@]}"; do
+    if ! grep -q "$p" "$SCRIPT"; then
+        echo "❌ Pokémon '$p' not found in script"
+        exit 1
     fi
-}
-
-# Fetch each Pokémon in parallel
-for pokemon in "${POKEMON_LIST[@]}"; do
-    fetch_pokemon "$pokemon" &
 done
+echo "✅ Pokémon list present"
 
-# Wait for all background processes to complete
-wait
+# 2️⃣ Check if function or loop uses background processes (&)
+if ! grep -Eq "\&[[:space:]]*$" "$SCRIPT"; then
+    echo "❌ Script does not run fetch commands in the background (& missing)"
+    exit 1
+fi
+echo "✅ Script runs processes in background"
 
-echo "All Pokémon data retrieval completed."
+# 3️⃣ Check if script waits for processes to complete
+if ! grep -q "wait" "$SCRIPT"; then
+    echo "❌ Script does not use 'wait' to handle background processes"
+    exit 1
+fi
+echo "✅ Script waits for background processes to complete"
+
+# 4️⃣ Optional: Check if fetch function exists
+if ! grep -q "fetch_pokemon" "$SCRIPT"; then
+    echo "⚠️ No 'fetch_pokemon' function detected (might be inline code)"
+else
+    echo "✅ fetch_pokemon function found"
+fi
+
+echo "🎉 All checks passed for parallel process handling"
