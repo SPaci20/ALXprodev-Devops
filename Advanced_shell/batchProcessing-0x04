@@ -1,41 +1,39 @@
 #!/bin/bash
 
-# === Pokémon list ===
+SCRIPT_TO_CHECK="fetch_pokemon_parallel.sh"  # Script you want to verify
 POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# API base URL
-BASE_URL="https://pokeapi.co/api/v2/pokemon"
+echo "=== Checking Parallel Pokémon Fetch Script ==="
 
-# Output directory and error log
-OUTPUT_DIR="pokemon_data"
-ERROR_FILE="errors.txt"
-
-# Prepare output
-mkdir -p "$OUTPUT_DIR"
-> "$ERROR_FILE"
-
-# Function to fetch a single Pokémon
-fetch_pokemon() {
-    local pokemon=$1
-    local url="$BASE_URL/$pokemon"
-
-    echo "Fetching data for $pokemon..."
-    RESPONSE=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$pokemon.json" "$url")
-
-    if [ "$RESPONSE" -eq 200 ]; then
-        echo "Saved data to $OUTPUT_DIR/$pokemon.json ✅"
-    else
-        echo "$(date) - Failed to fetch data for $pokemon (HTTP $RESPONSE)" >> "$ERROR_FILE"
-        rm -f "$OUTPUT_DIR/$pokemon.json"
+# 1️⃣ Check if Pokémon list exists
+missing_pokemon=false
+for p in "${POKEMON_LIST[@]}"; do
+    if ! grep -q "$p" "$SCRIPT_TO_CHECK"; then
+        echo "❌ Pokémon '$p' not found in script"
+        missing_pokemon=true
     fi
-}
-
-# Loop through each Pokémon and fetch in parallel
-for pokemon in "${POKEMON_LIST[@]}"; do
-    fetch_pokemon "$pokemon" &   # background process
 done
+if [ "$missing_pokemon" = false ]; then
+    echo "✅ All Pokémon names found in script"
+fi
 
-# Wait for all background processes to complete
-wait
+# 2️⃣ Check if background process operator '&' is used
+if grep -E "fetch_pokemon.*\&" "$SCRIPT_TO_CHECK" >/dev/null; then
+    echo "✅ Background process usage found"
+else
+    echo "❌ No background process '&' usage detected"
+fi
 
-echo "All Pokémon data retrieval completed."
+# 3️⃣ Check if 'wait' is present to handle processes
+if grep -q "wait" "$SCRIPT_TO_CHECK"; then
+    echo "✅ 'wait' command found for process synchronization"
+else
+    echo "❌ 'wait' command missing"
+fi
+
+# 4️⃣ Final status
+if grep -E "fetch_pokemon.*\&" "$SCRIPT_TO_CHECK" >/dev/null && grep -q "wait" "$SCRIPT_TO_CHECK"; then
+    echo "🎯 Script handles parallel processes and waits for completion"
+else
+    echo "⚠️ Script does not fully meet parallel processing requirements"
+fi
